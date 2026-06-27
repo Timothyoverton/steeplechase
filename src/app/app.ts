@@ -109,6 +109,7 @@ interface Racer {
   jumpH: number;
   jumpVY: number;
   inAir: boolean;
+  jumpCooldown: number;
   whipCooldown: number;
   hurdleState: ('none' | 'cleared' | 'hit' | 'blocking')[];
   waterState:  ('none' | 'cleared' | 'wet')[];
@@ -122,7 +123,7 @@ function makeRacer(name: string, horse: HorseDef, track: TrackDef): Racer {
   return {
     name, horse,
     cameraX: 0, speed: 0,
-    jumpH: 0, jumpVY: 0, inAir: false,
+    jumpH: 0, jumpVY: 0, inAir: false, jumpCooldown: 0,
     whipCooldown: 0,
     hurdleState: Array(track.hurdles.length).fill('none'),
     waterState:  Array(track.water.length).fill('none'),
@@ -190,11 +191,11 @@ export class App implements OnInit, OnDestroy {
     if (this.screen === 'race') {
       const p1Jump = e.key === 'ArrowUp' || (this.playerCount === 1 && (e.key === 'w' || e.key === 'W'));
       const p2Jump = e.key === 'w' || e.key === 'W';
-      if (p1Jump && !this.p1.inAir && !this.p1.finished) {
+      if (p1Jump && !this.p1.inAir && this.p1.jumpCooldown <= 0 && !this.p1.finished) {
         this.p1.jumpVY = JUMP_POWER * this.p1.horse.spring;
         this.p1.inAir  = true;
       }
-      if (this.playerCount === 2 && p2Jump && !this.p2.inAir && !this.p2.finished) {
+      if (this.playerCount === 2 && p2Jump && !this.p2.inAir && this.p2.jumpCooldown <= 0 && !this.p2.finished) {
         this.p2.jumpVY = JUMP_POWER * this.p2.horse.spring;
         this.p2.inAir  = true;
       }
@@ -316,12 +317,13 @@ export class App implements OnInit, OnDestroy {
     }
 
     r.speed *= Math.pow(FRICTION * r.horse.stamina, f);
-    if (r.whipCooldown > 0) r.whipCooldown -= f;
+    if (r.whipCooldown  > 0) r.whipCooldown  -= f;
+    if (r.jumpCooldown  > 0) r.jumpCooldown   = Math.max(0, r.jumpCooldown - f);
 
     if (r.inAir) {
       r.jumpH  += r.jumpVY * f;
       r.jumpVY -= GRAVITY * f;
-      if (r.jumpH <= 0) { r.jumpH = 0; r.inAir = false; }
+      if (r.jumpH <= 0) { r.jumpH = 0; r.inAir = false; r.jumpCooldown = 36; } // ~0.6s cooldown
     }
 
     // Airborne: horse covers ~40% more ground, giving the visual arc feel
