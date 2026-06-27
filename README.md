@@ -1,61 +1,53 @@
-# Race Car 🏎
+# Steeplechase 🏇
 
-Mica's Racing Championship — a neon retro side-view racing game built with Angular 20.
+Neon retro steeplechase horse racing — inspired by the classic Atari 2600 game from 1978. Built with Angular 20.
 
 ## Play Now
 
-🏁 **Play the game:** https://timothyoverton.github.io/race-car/
+🏁 **Play the game:** https://timothyoverton.github.io/steeplechase/
 
 ## How to Play
+
+Mash your gallop key to build speed, then time your jumps to clear the hurdles cleanly. Hit a hurdle and you lose speed — clear them all for the fastest time!
 
 ### Controls
 
 | | Player 1 | Player 2 |
 |---|---|---|
-| **Accelerate** | → Right Arrow | D |
-| **Turbo Boost** | L | Spacebar |
+| **Gallop** | → Right Arrow | D |
+| **Jump** | ↑ Up Arrow | W |
+| **Whip** | L | Spacebar |
 
-In **1 Player** mode, both sets of controls work for the single player.
+In **1 Player** mode, both sets of controls work.
 
-### Game Flow
+### The Whip
 
-1. **Title screen** — choose 1 or 2 players
-2. **Enter your name** — type it in, press Enter
-3. **Pick a car** — 5 cars with different stats
-4. **Pick a track** — 3 tracks with increasing difficulty
-5. **Race!** — mash your key to go faster, hit Turbo for a burst of speed
+Like a turbo boost — use it for a burst of speed, but it needs time to recharge. Save it for after a hurdle collision or a sprint to the finish!
 
-### The Tracks
+### The Courses
 
-| Track | Hazards | Length |
+| Course | Hurdles | Distance |
 |---|---|---|
-| Desert Dash | Oil slick, Jump, Boulders, Mud | Short |
-| Mountain Mayhem | Mud, Big jumps, Heavy boulders | Medium |
-| Jungle Fever | Dense hazards all the way | Long |
+| Meadow Sprint | 4 | Short |
+| County Chase | 7 | Medium |
+| Grand National | 12 | Long |
 
-### Hazards
+### The Horses
 
-- **Oil Slick** 🛢 — Spins your car and cuts speed. High-grip cars handle it better.
-- **Jump Ramp** 🟨 — Launches you into the air! Hit it with speed to fly over the boulders.
-- **Boulder Field** ⚫ — Massive slowdown. Monster Truck is completely immune. Jump over them!
-- **Mud** 🟫 — Slows you down. Worse than oil if you have poor grip.
-
-### The Cars
-
-| Car | Speed | Jump | Grip | Boulder |
-|---|---|---|---|---|
-| 🔴 Sports Car | ⭐⭐⭐⭐⭐ | ★★★ | ★ | ★ |
-| 🔵 4×4 SUV | ⭐⭐⭐ | ★★★★ | ★★★★ | ★★★★ |
-| 🟠 Monster Truck | ⭐⭐ | ⭐⭐⭐⭐⭐ | ★★★★ | ⭐⭐⭐⭐⭐ |
-| 🟢 Buggy | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ★★★ | ★★ |
-| 🟣 Van | ⭐ | ★★ | ★★★ | ★★ |
+| Horse | Speed | Jump | Stamina |
+|---|---|---|---|
+| 🔴 Thoroughbred | ⭐⭐⭐⭐⭐ | ★★ | ★★★ |
+| 🟢 Steeplechaser | ★★★ | ⭐⭐⭐⭐⭐ | ★★★ |
+| 🟡 Palomino | ⭐⭐⭐⭐ | ★★★ | ⭐⭐⭐⭐ |
+| ⚫ Clydesdale | ★★ | ★★★ | ⭐⭐⭐⭐⭐ |
+| 🟣 Arabian | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ★★ |
 
 ### Tips
 
-- Mash your acceleration key as fast as you can — speed builds with each press!
-- Save Turbo boost for after a hazard to recover lost speed
-- Hit the jump ramp with maximum speed to fly clear over the boulder field
-- Monster Truck is slow but nothing stops it — great for beginners
+- **Mash** your gallop key — speed builds with every press!
+- **Time your jump early** — the horse needs to be airborne before the hurdle
+- **Save your Whip** for a last-second burst or post-hurdle recovery
+- The **Steeplechaser** is forgiving on jumps; the **Thoroughbred** is fastest on open ground
 
 ## Local Development
 
@@ -74,4 +66,4 @@ npm run deploy
 
 ---
 
-Designed by Mica · Built with Angular 20 · Deployed via GitHub Pages
+Inspired by Steeplechase (Atari 2600, 1978) · Built with Angular 20 · Deployed via GitHub Pages
