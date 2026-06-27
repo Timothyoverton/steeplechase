@@ -1,0 +1,465 @@
+<div class="game-wrapper">
+
+<!-- ══════════════════════════════════════════════════════════ TITLE ══ -->
+<div class="screen title-screen" *ngIf="screen === 'title'">
+  <div class="title-stars">🏇 🏇 🏇</div>
+  <div class="title-logo">STEEPLECHASE</div>
+  <div class="title-sub">CLASSIC HORSE RACING</div>
+  <div class="title-buttons">
+    <button class="btn-big btn-p1" (click)="startGame(1)">1 PLAYER</button>
+    <button class="btn-big btn-p2" (click)="startGame(2)">2 PLAYERS</button>
+  </div>
+  <div class="title-controls">
+    <div class="ctrl-row">
+      <span class="ctrl-key">→</span> gallop (P1) &nbsp;|&nbsp;
+      <span class="ctrl-key">↑</span> jump (P1) &nbsp;|&nbsp;
+      <span class="ctrl-key">L</span> whip (P1)
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-key">D</span> gallop (P2) &nbsp;|&nbsp;
+      <span class="ctrl-key">W</span> jump (P2) &nbsp;|&nbsp;
+      <span class="ctrl-key">SPC</span> whip (P2)
+    </div>
+  </div>
+
+  <!-- Leaderboard preview -->
+  <div class="title-leaderboard" *ngIf="lb">
+    <h3>TRACK RECORDS</h3>
+    <ng-container *ngFor="let t of tracks">
+      <div class="lb-track-name">{{ t.name }}</div>
+      <ng-container *ngIf="(lb[t.name] || []).length > 0; else noTimes">
+        <div class="lb-entry" *ngFor="let e of (lb[t.name] || []); let i = index">
+          <span class="lb-rank">{{ i + 1 }}.</span>
+          <span class="lb-name">{{ e.name }}</span>
+          <span class="lb-horse">{{ e.horse }}</span>
+          <span class="lb-time">{{ fmt(e.time) }}</span>
+        </div>
+      </ng-container>
+      <ng-template #noTimes><div class="lb-empty">— No times yet —</div></ng-template>
+    </ng-container>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ NAME ENTRY ══ -->
+<div class="screen name-screen" *ngIf="screen === 'name'">
+  <div class="name-content">
+    <div class="name-icon">🏇</div>
+    <h2>{{ nameTarget === 1 ? 'ENTER YOUR NAME, JOCKEY!' : 'PLAYER 2 — YOUR NAME?' }}</h2>
+    <div class="name-input-box">
+      <span class="name-typed">{{ typedName }}</span><span class="cursor">|</span>
+    </div>
+    <div class="name-hint">TYPE YOUR NAME · PRESS ENTER</div>
+    <button class="btn-go" (click)="confirmName()">READY</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ HORSE SELECT ══ -->
+<div class="screen horse-screen" *ngIf="screen === 'horse'">
+  <div class="pick-title">{{ horseSelectLabel() }}</div>
+  <div class="horse-grid">
+    <div class="horse-card"
+         *ngFor="let h of horses; let i = index"
+         [class.selected]="selectedHorseIdx() === i"
+         (click)="selectHorse(i)">
+      <span class="selected-badge" *ngIf="selectedHorseIdx() === i">CHOSEN</span>
+
+      <!-- Mini horse SVG preview -->
+      <svg width="120" height="80" class="horse-preview-svg" viewBox="-60 -40 120 80">
+        <defs>
+          <radialGradient id="hg{{i}}" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" [attr.stop-color]="h.color"/>
+            <stop offset="100%" [attr.stop-color]="h.color" stop-opacity="0.6"/>
+          </radialGradient>
+        </defs>
+        <!-- Body -->
+        <ellipse cx="0" cy="-5" rx="28" ry="14" [attr.fill]="h.color"/>
+        <!-- Neck -->
+        <line x1="20" y1="-12" x2="30" y2="-24" [attr.stroke]="h.color" stroke-width="9" stroke-linecap="round"/>
+        <!-- Head -->
+        <ellipse cx="34" cy="-26" rx="9" ry="7" [attr.fill]="h.color"/>
+        <!-- Ear -->
+        <polygon [attr.points]="'32,-33 36,-33 34,-38'" [attr.fill]="h.color"/>
+        <!-- Eye -->
+        <circle cx="37" cy="-28" r="1.5" fill="#fff"/>
+        <!-- Mane -->
+        <path d="M22,-18 Q18,-28 16,-32" [attr.stroke]="h.color" stroke-width="4" fill="none" opacity="0.7"/>
+        <!-- Tail -->
+        <path d="M-26,-6 Q-40,8 -36,22" [attr.stroke]="h.color" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- Legs (static for preview) -->
+        <line x1="14" y1="8" x2="16" y2="28" [attr.stroke]="h.color" stroke-width="5" stroke-linecap="round"/>
+        <line x1="6" y1="8" x2="4" y2="28" [attr.stroke]="h.color" stroke-width="5" stroke-linecap="round"/>
+        <line x1="-12" y1="8" x2="-14" y2="28" [attr.stroke]="h.color" stroke-width="5" stroke-linecap="round"/>
+        <line x1="-4" y1="8" x2="-2" y2="28" [attr.stroke]="h.color" stroke-width="5" stroke-linecap="round"/>
+        <!-- Jockey -->
+        <ellipse cx="6" cy="-26" rx="7" ry="7" [attr.fill]="h.jockeyColor"/>
+        <rect x="0" y="-20" width="14" height="12" rx="3" [attr.fill]="h.jockeyColor" opacity="0.9"/>
+      </svg>
+
+      <div class="horse-name" [style.color]="h.color">{{ h.name }}</div>
+      <div class="horse-desc">{{ h.desc }}</div>
+      <div class="horse-stats">
+        <div class="stat-row">
+          <span class="stat-lbl">SPD</span>
+          <span class="stat-dot filled" *ngFor="let x of starArray(h.stars.spd)"></span>
+          <span class="stat-dot" *ngFor="let x of emptyStars(h.stars.spd)"></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">JMP</span>
+          <span class="stat-dot filled" *ngFor="let x of starArray(h.stars.jmp)"></span>
+          <span class="stat-dot" *ngFor="let x of emptyStars(h.stars.jmp)"></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">STM</span>
+          <span class="stat-dot filled" *ngFor="let x of starArray(h.stars.stm)"></span>
+          <span class="stat-dot" *ngFor="let x of emptyStars(h.stars.stm)"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn-back" (click)="screen = 'name'">← BACK</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ TRACK SELECT ══ -->
+<div class="screen track-screen" *ngIf="screen === 'track'">
+  <div class="pick-title">CHOOSE YOUR COURSE</div>
+  <div class="track-list">
+    <div class="track-card" *ngFor="let t of tracks; let i = index" (click)="selectTrack(i)">
+      <!-- Mini SVG preview of the track -->
+      <svg class="track-preview" width="160" height="70" viewBox="0 0 160 70">
+        <rect width="160" height="70" [attr.fill]="t.skyBot"/>
+        <rect y="48" width="160" height="22" [attr.fill]="t.groundColor"/>
+        <rect y="44" width="160" height="6" fill="#2d5a1a"/>
+        <!-- Preview hurdles -->
+        <g *ngFor="let hx of t.hurdles; let hi = index">
+          <rect [attr.x]="(hx / t.length) * 150 + 5" y="28" width="4" height="18"
+                fill="#ffcc00" opacity="0.9"/>
+          <rect [attr.x]="(hx / t.length) * 150 + 2" y="28" width="10" height="3"
+                fill="#ffcc00" opacity="0.9"/>
+        </g>
+        <!-- Finish line -->
+        <line x1="152" y1="44" x2="152" y2="70" stroke="#fff" stroke-width="2" stroke-dasharray="4,3"/>
+        <!-- Mini horse silhouette -->
+        <ellipse cx="12" cy="42" rx="8" ry="4" fill="#888"/>
+        <ellipse cx="18" cy="39" rx="3" ry="2.5" fill="#888"/>
+      </svg>
+      <div class="track-info">
+        <div class="track-name">{{ t.name }}</div>
+        <div class="track-desc">{{ t.desc }}</div>
+        <div class="track-lb">{{ trackLbPreview(t) }}</div>
+      </div>
+      <div class="track-go">▶</div>
+    </div>
+  </div>
+  <button class="btn-back" (click)="screen = 'horse'">← BACK</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ COUNTDOWN ══ -->
+<div class="countdown-screen" *ngIf="screen === 'countdown'">
+  <div class="cd-val" [class.cd-go]="countdownDone">{{ countdownDone ? 'GO!' : countdownVal }}</div>
+  <div class="cd-track">{{ track?.name }}</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ RACE ══ -->
+<div class="race-wrapper" *ngIf="screen === 'race'">
+
+  <!-- ── P1 Lane ─────────────────────────────────────────── -->
+  <div class="lane-container">
+    <div class="lane-name-tag">{{ p1.name }} · {{ p1.horse.name }}</div>
+
+    <!-- HUD -->
+    <svg class="hud-svg" width="960" height="36" style="position:absolute;top:0;left:0;z-index:10;">
+      <!-- Speed bar -->
+      <text x="10" y="12" fill="#ffcc00" font-size="9" font-family="monospace">SPEED</text>
+      <rect x="10" y="16" width="100" height="8" rx="3" fill="#333"/>
+      <rect x="10" y="16" [attr.width]="(p1.speed / p1.horse.topSpeed) * 100" height="8" rx="3" fill="#ffcc00"/>
+
+      <!-- Whip bar -->
+      <text x="120" y="12" fill="#ff6644" font-size="9" font-family="monospace">WHIP</text>
+      <rect x="120" y="16" width="60" height="8" rx="3" fill="#333"/>
+      <rect x="120" y="16" [attr.width]="whipPct(p1) * 0.6" height="8" rx="3"
+            [attr.fill]="whipReady(p1) ? '#ff6644' : '#552211'"/>
+
+      <!-- Progress bar -->
+      <text x="195" y="12" fill="#44aaff" font-size="9" font-family="monospace">PROGRESS</text>
+      <rect x="195" y="16" width="200" height="8" rx="3" fill="#333"/>
+      <rect x="195" y="16" [attr.width]="progressPct(p1) * 2" height="8" rx="3" fill="#44aaff"/>
+
+      <!-- Hurdles hit indicator -->
+      <text x="410" y="12" fill="#ff4444" font-size="9" font-family="monospace">HITS</text>
+      <text x="410" y="24" fill="#ff4444" font-size="11" font-family="monospace" font-weight="bold">{{ p1.hurdlesHit }}</text>
+
+      <!-- Controls hint -->
+      <text x="820" y="12" fill="#446" font-size="9" font-family="monospace">→ GALLOP  ↑ JUMP  L WHIP</text>
+
+      <!-- IN AIR indicator -->
+      <text *ngIf="p1.inAir" x="470" y="20" fill="#44ff88" font-size="10" font-family="monospace" font-weight="bold">✈ AIR</text>
+    </svg>
+
+    <!-- Race SVG -->
+    <svg class="lane-svg" width="960" height="350">
+      <!-- Sky gradient -->
+      <defs>
+        <linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" [attr.stop-color]="track.skyTop"/>
+          <stop offset="100%" [attr.stop-color]="track.skyBot"/>
+        </linearGradient>
+        <filter id="glow1">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="960" height="350" fill="url(#sky1)"/>
+
+      <!-- Ground strips -->
+      <rect y="300" width="960" height="50" [attr.fill]="track.groundColor"/>
+      <rect y="295" width="960" height="8" fill="#2d5a1a"/>
+      <!-- Turf texture lines -->
+      <line x1="0" y1="298" x2="960" y2="298" stroke="#1a4010" stroke-width="1" opacity="0.5"/>
+
+      <!-- Distance markers scrolling -->
+      <g *ngFor="let m of [0,200,400,600,800,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000,3200,3400,3600,3800,4000,4200,4400,4600,4800,5000,5200,5400]">
+        <line *ngIf="m - p1.cameraX + 200 > -10 && m - p1.cameraX + 200 < 970"
+              [attr.x1]="m - p1.cameraX + 200" y1="295"
+              [attr.x2]="m - p1.cameraX + 200" y2="305"
+              stroke="#3a6a2a" stroke-width="1"/>
+      </g>
+
+      <!-- Hurdles -->
+      <g *ngFor="let hx of track.hurdles; let i = index">
+        <g *ngIf="hurdleScreenX(p1, hx) > -20 && hurdleScreenX(p1, hx) < 980"
+           [attr.transform]="'translate(' + hurdleScreenX(p1, hx) + ',0)'">
+          <!-- Shadow -->
+          <ellipse cx="0" cy="302" rx="10" ry="3" fill="#000" opacity="0.3"/>
+          <!-- Left post -->
+          <rect x="-12" y="246" width="5" height="54" rx="2"
+                [attr.fill]="p1.hurdleState[i] === 'hit' ? '#ff3333' : '#ffcc00'"
+                filter="url(#glow1)"/>
+          <!-- Right post -->
+          <rect x="7" y="246" width="5" height="54" rx="2"
+                [attr.fill]="p1.hurdleState[i] === 'hit' ? '#ff3333' : '#ffcc00'"
+                filter="url(#glow1)"/>
+          <!-- Cross bar -->
+          <rect x="-14" y="244" width="28" height="6" rx="2"
+                [attr.fill]="p1.hurdleState[i] === 'hit' ? '#ff5555' : '#ffe066'"
+                filter="url(#glow1)"/>
+          <!-- Bush base -->
+          <ellipse cx="0" cy="298" rx="12" ry="5" fill="#1a5a1a" opacity="0.8"/>
+          <!-- Hurdle number -->
+          <text [attr.x]="0" y="240" text-anchor="middle" fill="#886622" font-size="8" font-family="monospace">{{ i+1 }}</text>
+        </g>
+      </g>
+
+      <!-- Finish line -->
+      <g *ngIf="finishScreenX(p1) > -20 && finishScreenX(p1) < 1000">
+        <line [attr.x1]="finishScreenX(p1)" y1="250" [attr.x2]="finishScreenX(p1)" y2="350"
+              stroke="#fff" stroke-width="3" stroke-dasharray="8,8"/>
+        <text [attr.x]="finishScreenX(p1)" y="246" text-anchor="middle"
+              fill="#ffcc00" font-size="12" font-family="monospace" font-weight="bold">FINISH</text>
+      </g>
+
+      <!-- P1 Horse -->
+      <g [attr.transform]="'translate(200,' + horseY(p1, 295) + ')'">
+        <!-- Shadow on ground -->
+        <ellipse cx="0" [attr.cy]="p1.jumpH + 5" rx="30" ry="5"
+                 fill="#000" opacity="0.25"/>
+        <!-- Body -->
+        <ellipse cx="0" cy="-8" rx="28" ry="13" [attr.fill]="p1.horse.color"/>
+        <!-- Neck -->
+        <line x1="20" y1="-14" x2="30" y2="-26" [attr.stroke]="p1.horse.color" stroke-width="10" stroke-linecap="round"/>
+        <!-- Head -->
+        <ellipse cx="34" cy="-28" rx="10" ry="8" [attr.fill]="p1.horse.color"/>
+        <!-- Ear -->
+        <polygon [attr.points]="'31,-36 36,-36 34,-42'" [attr.fill]="p1.horse.color"/>
+        <!-- Eye -->
+        <circle cx="37" cy="-30" r="2" fill="#111"/>
+        <circle cx="38" cy="-31" r="0.8" fill="#fff"/>
+        <!-- Nostril -->
+        <ellipse cx="42" cy="-26" rx="2" ry="1.5" fill="#000" opacity="0.4"/>
+        <!-- Mane -->
+        <path d="M22,-20 Q18,-30 14,-34" [attr.stroke]="p1.horse.color" stroke-width="5" fill="none"
+              stroke-linecap="round" opacity="0.8"/>
+        <!-- Tail -->
+        <path d="M-26,-8 Q-44,10 -38,28" [attr.stroke]="p1.horse.color" stroke-width="4" fill="none"
+              stroke-linecap="round"/>
+        <!-- Legs (animated) -->
+        <ng-container *ngFor="let leg of legPos(p1)">
+          <line [attr.x1]="leg.x1" [attr.y1]="leg.y1"
+                [attr.x2]="p1.inAir ? leg.x1 * 0.6 : leg.x2"
+                [attr.y2]="p1.inAir ? -8 : leg.y2"
+                [attr.stroke]="p1.horse.color" stroke-width="5" stroke-linecap="round"/>
+          <!-- Hoof -->
+          <rect *ngIf="!p1.inAir"
+                [attr.x]="leg.x2 - 3" [attr.y]="leg.y2 - 2"
+                width="6" height="4" rx="1" fill="#222"/>
+        </ng-container>
+        <!-- Jockey body -->
+        <rect x="-4" y="-28" width="16" height="16" rx="3" [attr.fill]="p1.horse.jockeyColor"/>
+        <!-- Jockey head/helmet -->
+        <ellipse cx="6" cy="-32" rx="8" ry="7" [attr.fill]="p1.horse.jockeyColor"/>
+        <!-- Helmet brim -->
+        <rect x="-2" y="-28" width="16" height="4" rx="1" [attr.fill]="p1.horse.jockeyColor" opacity="0.8"/>
+        <!-- Jockey eyes -->
+        <circle cx="3" cy="-33" r="1.5" fill="#fff"/>
+        <circle cx="9" cy="-33" r="1.5" fill="#fff"/>
+        <!-- Whip arm -->
+        <line x1="12" y1="-22" x2="22" y2="-30" [attr.stroke]="p1.horse.jockeyColor" stroke-width="3"
+              stroke-linecap="round"/>
+        <line x1="22" y1="-30" x2="28" y2="-22" stroke="#c8a460" stroke-width="1.5" stroke-linecap="round"/>
+
+        <!-- FINISHED badge -->
+        <text *ngIf="p1.finished" x="0" y="-60" text-anchor="middle"
+              fill="#ffcc00" font-size="14" font-family="monospace" font-weight="bold">FINISHED!</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Lane divider -->
+  <div class="lane-divider" *ngIf="playerCount === 2">
+    ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
+  </div>
+
+  <!-- ── P2 Lane ─────────────────────────────────────────── -->
+  <div class="lane-container" *ngIf="playerCount === 2">
+    <div class="lane-name-tag">{{ p2.name }} · {{ p2.horse.name }}</div>
+
+    <!-- HUD -->
+    <svg class="hud-svg" width="960" height="36" style="position:absolute;top:0;left:0;z-index:10;">
+      <text x="10" y="12" fill="#ffcc00" font-size="9" font-family="monospace">SPEED</text>
+      <rect x="10" y="16" width="100" height="8" rx="3" fill="#333"/>
+      <rect x="10" y="16" [attr.width]="(p2.speed / p2.horse.topSpeed) * 100" height="8" rx="3" fill="#ffcc00"/>
+
+      <text x="120" y="12" fill="#ff6644" font-size="9" font-family="monospace">WHIP</text>
+      <rect x="120" y="16" width="60" height="8" rx="3" fill="#333"/>
+      <rect x="120" y="16" [attr.width]="whipPct(p2) * 0.6" height="8" rx="3"
+            [attr.fill]="whipReady(p2) ? '#ff6644' : '#552211'"/>
+
+      <text x="195" y="12" fill="#44aaff" font-size="9" font-family="monospace">PROGRESS</text>
+      <rect x="195" y="16" width="200" height="8" rx="3" fill="#333"/>
+      <rect x="195" y="16" [attr.width]="progressPct(p2) * 2" height="8" rx="3" fill="#44aaff"/>
+
+      <text x="410" y="12" fill="#ff4444" font-size="9" font-family="monospace">HITS</text>
+      <text x="410" y="24" fill="#ff4444" font-size="11" font-family="monospace" font-weight="bold">{{ p2.hurdlesHit }}</text>
+
+      <text x="820" y="12" fill="#446" font-size="9" font-family="monospace">D GALLOP  W JUMP  SPC WHIP</text>
+      <text *ngIf="p2.inAir" x="470" y="20" fill="#44ff88" font-size="10" font-family="monospace" font-weight="bold">✈ AIR</text>
+    </svg>
+
+    <svg class="lane-svg" width="960" height="350">
+      <defs>
+        <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" [attr.stop-color]="track.skyTop"/>
+          <stop offset="100%" [attr.stop-color]="track.skyBot"/>
+        </linearGradient>
+        <filter id="glow2">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="960" height="350" fill="url(#sky2)"/>
+      <rect y="300" width="960" height="50" [attr.fill]="track.groundColor"/>
+      <rect y="295" width="960" height="8" fill="#2d5a1a"/>
+      <line x1="0" y1="298" x2="960" y2="298" stroke="#1a4010" stroke-width="1" opacity="0.5"/>
+
+      <!-- Hurdles -->
+      <g *ngFor="let hx of track.hurdles; let i = index">
+        <g *ngIf="hurdleScreenX(p2, hx) > -20 && hurdleScreenX(p2, hx) < 980"
+           [attr.transform]="'translate(' + hurdleScreenX(p2, hx) + ',0)'">
+          <ellipse cx="0" cy="302" rx="10" ry="3" fill="#000" opacity="0.3"/>
+          <rect x="-12" y="246" width="5" height="54" rx="2"
+                [attr.fill]="p2.hurdleState[i] === 'hit' ? '#ff3333' : '#ffcc00'"
+                filter="url(#glow2)"/>
+          <rect x="7" y="246" width="5" height="54" rx="2"
+                [attr.fill]="p2.hurdleState[i] === 'hit' ? '#ff3333' : '#ffcc00'"
+                filter="url(#glow2)"/>
+          <rect x="-14" y="244" width="28" height="6" rx="2"
+                [attr.fill]="p2.hurdleState[i] === 'hit' ? '#ff5555' : '#ffe066'"
+                filter="url(#glow2)"/>
+          <ellipse cx="0" cy="298" rx="12" ry="5" fill="#1a5a1a" opacity="0.8"/>
+          <text [attr.x]="0" y="240" text-anchor="middle" fill="#886622" font-size="8" font-family="monospace">{{ i+1 }}</text>
+        </g>
+      </g>
+
+      <!-- Finish line -->
+      <g *ngIf="finishScreenX(p2) > -20 && finishScreenX(p2) < 1000">
+        <line [attr.x1]="finishScreenX(p2)" y1="250" [attr.x2]="finishScreenX(p2)" y2="350"
+              stroke="#fff" stroke-width="3" stroke-dasharray="8,8"/>
+        <text [attr.x]="finishScreenX(p2)" y="246" text-anchor="middle"
+              fill="#ffcc00" font-size="12" font-family="monospace" font-weight="bold">FINISH</text>
+      </g>
+
+      <!-- P2 Horse (blue jockey tint) -->
+      <g [attr.transform]="'translate(200,' + horseY(p2, 295) + ')'">
+        <ellipse cx="0" [attr.cy]="p2.jumpH + 5" rx="30" ry="5" fill="#000" opacity="0.25"/>
+        <ellipse cx="0" cy="-8" rx="28" ry="13" [attr.fill]="p2.horse.color"/>
+        <line x1="20" y1="-14" x2="30" y2="-26" [attr.stroke]="p2.horse.color" stroke-width="10" stroke-linecap="round"/>
+        <ellipse cx="34" cy="-28" rx="10" ry="8" [attr.fill]="p2.horse.color"/>
+        <polygon [attr.points]="'31,-36 36,-36 34,-42'" [attr.fill]="p2.horse.color"/>
+        <circle cx="37" cy="-30" r="2" fill="#111"/>
+        <circle cx="38" cy="-31" r="0.8" fill="#fff"/>
+        <ellipse cx="42" cy="-26" rx="2" ry="1.5" fill="#000" opacity="0.4"/>
+        <path d="M22,-20 Q18,-30 14,-34" [attr.stroke]="p2.horse.color" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>
+        <path d="M-26,-8 Q-44,10 -38,28" [attr.stroke]="p2.horse.color" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ng-container *ngFor="let leg of legPos(p2)">
+          <line [attr.x1]="leg.x1" [attr.y1]="leg.y1"
+                [attr.x2]="p2.inAir ? leg.x1 * 0.6 : leg.x2"
+                [attr.y2]="p2.inAir ? -8 : leg.y2"
+                [attr.stroke]="p2.horse.color" stroke-width="5" stroke-linecap="round"/>
+          <rect *ngIf="!p2.inAir" [attr.x]="leg.x2 - 3" [attr.y]="leg.y2 - 2"
+                width="6" height="4" rx="1" fill="#222"/>
+        </ng-container>
+        <!-- P2 jockey in blue -->
+        <rect x="-4" y="-28" width="16" height="16" rx="3" fill="#3399ff"/>
+        <ellipse cx="6" cy="-32" rx="8" ry="7" fill="#3399ff"/>
+        <rect x="-2" y="-28" width="16" height="4" rx="1" fill="#3399ff" opacity="0.8"/>
+        <circle cx="3" cy="-33" r="1.5" fill="#fff"/>
+        <circle cx="9" cy="-33" r="1.5" fill="#fff"/>
+        <line x1="12" y1="-22" x2="22" y2="-30" stroke="#3399ff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="22" y1="-30" x2="28" y2="-22" stroke="#c8a460" stroke-width="1.5" stroke-linecap="round"/>
+        <text *ngIf="p2.finished" x="0" y="-60" text-anchor="middle"
+              fill="#ffcc00" font-size="14" font-family="monospace" font-weight="bold">FINISHED!</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Timer -->
+  <div class="race-timer">{{ fmt(raceElapsed) }}</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ RESULTS ══ -->
+<div class="screen results-screen" *ngIf="screen === 'results'">
+  <div class="results-box">
+    <div class="results-trophy">🏆</div>
+    <div class="results-winner">{{ winner() }} WINS!</div>
+
+    <div class="results-times">
+      <div class="result-row">
+        <span>{{ p1.name }} ({{ p1.horse.name }})</span>
+        <span>{{ p1.finished ? fmt(p1.finishTime) : 'DNF' }}</span>
+        <span class="hit-count">{{ p1.hurdlesHit }} hit{{ p1.hurdlesHit !== 1 ? 's' : '' }}</span>
+      </div>
+      <div class="result-row" *ngIf="playerCount === 2">
+        <span>{{ p2.name }} ({{ p2.horse.name }})</span>
+        <span>{{ p2.finished ? fmt(p2.finishTime) : 'DNF' }}</span>
+        <span class="hit-count">{{ p2.hurdlesHit }} hit{{ p2.hurdlesHit !== 1 ? 's' : '' }}</span>
+      </div>
+    </div>
+
+    <!-- Track leaderboard -->
+    <div class="results-lb" *ngIf="lbForTrack().length > 0">
+      <div class="results-lb-title">{{ track.name }} — ALL TIME BEST</div>
+      <div class="lb-entry" *ngFor="let e of lbForTrack(); let i = index">
+        <span class="lb-rank">{{ i + 1 }}.</span>
+        <span class="lb-name">{{ e.name }}</span>
+        <span class="lb-horse">{{ e.horse }}</span>
+        <span class="lb-time">{{ fmt(e.time) }}</span>
+      </div>
+    </div>
+
+    <div class="results-btns">
+      <button class="btn-go" (click)="raceAgain()">RACE AGAIN</button>
+      <button class="btn-back" (click)="goTitle()">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+</div>
