@@ -296,7 +296,7 @@
       </g>
 
       <!-- ── P1 HORSE ── -->
-      <g [attr.transform]="'translate(200,' + horseY(p1, 291) + ')'">
+      <g [attr.transform]="'translate(200,' + horseY(p1, 291) + ') rotate(' + jumpTilt(p1) + ')'">
         <!-- Ground shadow -->
         <ellipse cx="0" [attr.cy]="p1.jumpH + 6" rx="32" ry="5" fill="#000" opacity="0.22"/>
 
@@ -495,7 +495,7 @@
       </g>
 
       <!-- ── P2 HORSE (blue jockey) ── -->
-      <g [attr.transform]="'translate(200,' + horseY(p2, 291) + ')'">
+      <g [attr.transform]="'translate(200,' + horseY(p2, 291) + ') rotate(' + jumpTilt(p2) + ')'">
         <ellipse cx="0" [attr.cy]="p2.jumpH + 6" rx="32" ry="5" fill="#000" opacity="0.22"/>
         <path d="M -26,-4 Q -30,-18 -18,-26 Q -6,-32 8,-28 Q 22,-24 28,-14 Q 32,-4 26,6 Q 18,14 4,16 Q -12,18 -22,10 Q -30,2 -26,-4 Z"
               [attr.fill]="p2.horse.color"/>
