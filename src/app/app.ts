@@ -2,15 +2,15 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // ── Physics ──────────────────────────────────────────────────
-const GRAVITY        = 0.42;
-const JUMP_POWER     = 6.0;     // halved from original; Thoroughbred apex ≈ 30 px, Steeplechaser ≈ 85 px
-const HURDLE_HEIGHT  = 26;      // horse must clear this height; Thoroughbred just makes it
-const HURDLE_HALF    = 22;      // collision zone half-width (world px)
+const GRAVITY        = 0.38;
+const JUMP_POWER     = 8.0;     // Thoroughbred apex ≈ 65 px; clears the 44 px hurdle with margin
+const HURDLE_HEIGHT  = 44;      // matches visual hurdle top rail (~45 px above ground in SVG)
+const HURDLE_HALF    = 30;      // collision zone half-width (world px)
 const WATER_WIDTH    = 80;      // water ditch world-px width
-const WATER_HEIGHT   = 12;      // horse needs jumpH > this to skim over water
+const WATER_HEIGHT   = 20;      // horse needs jumpH > this to clear water
 const HORSE_SCREEN_X = 200;
-const FRICTION       = 0.992;
-const WHIP_POWER     = 5.0;
+const FRICTION       = 0.991;
+const WHIP_POWER     = 1.8;
 const WHIP_COOLDOWN  = 240;
 
 // ── Horse definitions ─────────────────────────────────────────
@@ -23,23 +23,23 @@ const HORSES: HorseDef[] = [
   { name: 'Thoroughbred', color: '#b83222', darkColor: '#7a1a0e', jockeyColor: '#e74c3c',
     desc: 'Blazing speed, average jump',
     stars: { spd: 5, jmp: 2, stm: 3 },
-    topSpeed: 13, accel: 2.2, spring: 0.88, stamina: 0.9925 },
+    topSpeed: 3.8, accel: 0.42, spring: 0.95, stamina: 0.9925 },
   { name: 'Steeplechaser', color: '#1e8a46', darkColor: '#0e5228', jockeyColor: '#2ecc71',
     desc: 'Born to jump — leaps sky-high',
     stars: { spd: 3, jmp: 5, stm: 3 },
-    topSpeed: 10, accel: 1.7, spring: 1.45, stamina: 0.9935 },
+    topSpeed: 2.8, accel: 0.32, spring: 1.40, stamina: 0.9935 },
   { name: 'Palomino', color: '#c8860a', darkColor: '#7a5000', jockeyColor: '#f39c12',
     desc: 'Balanced all-rounder',
     stars: { spd: 4, jmp: 3, stm: 4 },
-    topSpeed: 11, accel: 1.9, spring: 1.12, stamina: 0.9940 },
+    topSpeed: 3.3, accel: 0.37, spring: 1.12, stamina: 0.9940 },
   { name: 'Clydesdale', color: '#6a6e72', darkColor: '#3a3e42', jockeyColor: '#95a5a6',
     desc: 'Slow but iron stamina',
     stars: { spd: 2, jmp: 3, stm: 5 },
-    topSpeed: 8, accel: 1.4, spring: 1.06, stamina: 0.9960 },
+    topSpeed: 2.2, accel: 0.25, spring: 1.05, stamina: 0.9960 },
   { name: 'Arabian', color: '#7b2fa8', darkColor: '#4a1a66', jockeyColor: '#9b59b6',
     desc: 'Nimble with a quick whip',
     stars: { spd: 4, jmp: 4, stm: 2 },
-    topSpeed: 12, accel: 2.0, spring: 1.22, stamina: 0.9910 },
+    topSpeed: 3.5, accel: 0.40, spring: 1.20, stamina: 0.9910 },
 ];
 
 // ── Track definitions ─────────────────────────────────────────
@@ -110,7 +110,7 @@ interface Racer {
   jumpVY: number;
   inAir: boolean;
   whipCooldown: number;
-  hurdleState: ('none' | 'cleared' | 'hit')[];
+  hurdleState: ('none' | 'cleared' | 'hit' | 'blocking')[];
   waterState:  ('none' | 'cleared' | 'wet')[];
   hurdlesHit: number;
   waterHit: number;
@@ -210,13 +210,13 @@ export class App implements OnInit, OnDestroy {
       }
 
       if (e.key === 'ArrowRight' && !this.p1.finished) {
-        this.p1.speed = Math.min(this.p1.speed + this.p1.horse.accel * 0.6, this.p1.horse.topSpeed);
+        this.p1.speed = Math.min(this.p1.speed + this.p1.horse.accel, this.p1.horse.topSpeed);
       }
       if (this.playerCount === 1 && (e.key === 'd' || e.key === 'D') && !this.p1.finished) {
-        this.p1.speed = Math.min(this.p1.speed + this.p1.horse.accel * 0.6, this.p1.horse.topSpeed);
+        this.p1.speed = Math.min(this.p1.speed + this.p1.horse.accel, this.p1.horse.topSpeed);
       }
       if (this.playerCount === 2 && (e.key === 'd' || e.key === 'D') && !this.p2.finished) {
-        this.p2.speed = Math.min(this.p2.speed + this.p2.horse.accel * 0.6, this.p2.horse.topSpeed);
+        this.p2.speed = Math.min(this.p2.speed + this.p2.horse.accel, this.p2.horse.topSpeed);
       }
     }
   }
@@ -307,10 +307,11 @@ export class App implements OnInit, OnDestroy {
   updateRacer(r: Racer, isP1: boolean, f: number) {
     if (r.finished) return;
 
+    // Hold key gives a gentle push; mash (keydown) is the primary acceleration
     const accelKey = isP1
       ? (this.keys['ArrowRight'] || (this.playerCount === 1 && (this.keys['d'] || this.keys['D'])))
       : (this.keys['d'] || this.keys['D']);
-    if (accelKey) r.speed = Math.min(r.speed + r.horse.accel * f, r.horse.topSpeed);
+    if (accelKey) r.speed = Math.min(r.speed + r.horse.accel * 0.12 * f, r.horse.topSpeed);
 
     r.speed *= Math.pow(FRICTION * r.horse.stamina, f);
     if (r.whipCooldown > 0) r.whipCooldown -= f;
@@ -323,18 +324,34 @@ export class App implements OnInit, OnDestroy {
 
     r.cameraX += r.speed * f;
 
-    // Hurdle collision — must jump over
+    // Hurdle collision — blocking: horse cannot pass until it jumps over
     this.track.hurdles.forEach((hx, i) => {
-      if (r.hurdleState[i] !== 'none') return;
+      const state = r.hurdleState[i];
+      if (state === 'cleared') return;
+
       const dist = hx - r.cameraX;
-      if (Math.abs(dist) < HURDLE_HALF) {
-        if (r.jumpH < HURDLE_HEIGHT) {
-          r.speed *= 0.44;   // solid hit — big penalty
-          r.hurdleState[i] = 'hit';
-          r.hurdlesHit++;
+
+      if (state === 'none') {
+        if (dist <= HURDLE_HALF && dist >= -4) {
+          if (r.jumpH >= HURDLE_HEIGHT) {
+            r.hurdleState[i] = 'cleared';   // jumped over cleanly
+          } else {
+            // Horse hits hurdle — pin it, count the fault
+            r.cameraX = hx - HURDLE_HALF;
+            r.hurdleState[i] = 'blocking';
+            r.hurdlesHit++;
+          }
+        } else if (dist < -HURDLE_HALF) {
+          r.hurdleState[i] = 'cleared';
         }
-      } else if (dist < -HURDLE_HALF) {
-        r.hurdleState[i] = 'cleared';
+      } else if (state === 'blocking') {
+        if (r.jumpH >= HURDLE_HEIGHT) {
+          r.hurdleState[i] = 'cleared';    // player jumped while blocked — now free
+        } else {
+          // Keep horse pinned at the hurdle; drain speed while stuck
+          r.cameraX = Math.min(r.cameraX, hx - HURDLE_HALF);
+          r.speed *= Math.pow(0.86, f);
+        }
       }
     });
 
@@ -343,7 +360,7 @@ export class App implements OnInit, OnDestroy {
       if (r.waterState[i] === 'cleared') return;
       const inZone = r.cameraX >= w.x && r.cameraX <= w.x + WATER_WIDTH;
       if (inZone && r.waterState[i] === 'none' && r.jumpH < WATER_HEIGHT) {
-        r.speed *= 0.36;   // splash — heavy penalty
+        r.speed *= 0.30;   // splash — heavy penalty (worse than hurdle)
         r.waterState[i] = 'wet';
         r.waterHit++;
       }
