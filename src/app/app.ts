@@ -10,7 +10,7 @@ const WATER_WIDTH    = 80;      // water ditch world-px width
 const WATER_HEIGHT   = 20;      // horse needs jumpH > this to clear water
 const HORSE_SCREEN_X = 200;
 const FRICTION       = 0.9972;  // gentle — speed coasts once built, doesn't bleed off instantly
-const WHIP_POWER     = 1.0;     // breaks topSpeed cap for a burst; held-accel won't drag it back down
+const WHIP_POWER     = 2.5;     // big overshoot above topSpeed; friction takes ~2.5 s to decay back
 const WHIP_COOLDOWN  = 240;
 
 // ── Horse definitions ─────────────────────────────────────────
