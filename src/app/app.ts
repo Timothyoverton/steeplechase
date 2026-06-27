@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 
 // ── Physics ──────────────────────────────────────────────────
 const GRAVITY        = 0.38;
-const JUMP_POWER     = 8.0;     // Thoroughbred apex ≈ 65 px; clears the 44 px hurdle with margin
+const JUMP_POWER     = 8.8;     // +10% from previous; Thoroughbred apex ≈ 78 px
 const HURDLE_HEIGHT  = 44;      // matches visual hurdle top rail (~45 px above ground in SVG)
 const HURDLE_HALF    = 30;      // collision zone half-width (world px)
 const WATER_WIDTH    = 80;      // water ditch world-px width
 const WATER_HEIGHT   = 20;      // horse needs jumpH > this to clear water
 const HORSE_SCREEN_X = 200;
-const FRICTION       = 0.991;
-const WHIP_POWER     = 1.8;
+const FRICTION       = 0.9972;  // gentle — speed coasts once built, doesn't bleed off instantly
+const WHIP_POWER     = 0.5;
 const WHIP_COOLDOWN  = 240;
 
 // ── Horse definitions ─────────────────────────────────────────
@@ -19,27 +19,28 @@ interface HorseDef {
   desc: string; stars: { spd: number; jmp: number; stm: number; };
   topSpeed: number; accel: number; spring: number; stamina: number;
 }
+// Speeds tuned so Meadow Sprint takes ~30-40 s; mash ≈20 presses to reach top speed
 const HORSES: HorseDef[] = [
   { name: 'Thoroughbred', color: '#b83222', darkColor: '#7a1a0e', jockeyColor: '#e74c3c',
     desc: 'Blazing speed, average jump',
     stars: { spd: 5, jmp: 2, stm: 3 },
-    topSpeed: 3.8, accel: 0.42, spring: 0.95, stamina: 0.9925 },
+    topSpeed: 1.80, accel: 0.10, spring: 0.95, stamina: 0.9980 },
   { name: 'Steeplechaser', color: '#1e8a46', darkColor: '#0e5228', jockeyColor: '#2ecc71',
     desc: 'Born to jump — leaps sky-high',
     stars: { spd: 3, jmp: 5, stm: 3 },
-    topSpeed: 2.8, accel: 0.32, spring: 1.40, stamina: 0.9935 },
+    topSpeed: 1.40, accel: 0.08, spring: 1.40, stamina: 0.9985 },
   { name: 'Palomino', color: '#c8860a', darkColor: '#7a5000', jockeyColor: '#f39c12',
     desc: 'Balanced all-rounder',
     stars: { spd: 4, jmp: 3, stm: 4 },
-    topSpeed: 3.3, accel: 0.37, spring: 1.12, stamina: 0.9940 },
+    topSpeed: 1.60, accel: 0.09, spring: 1.12, stamina: 0.9982 },
   { name: 'Clydesdale', color: '#6a6e72', darkColor: '#3a3e42', jockeyColor: '#95a5a6',
     desc: 'Slow but iron stamina',
     stars: { spd: 2, jmp: 3, stm: 5 },
-    topSpeed: 2.2, accel: 0.25, spring: 1.05, stamina: 0.9960 },
+    topSpeed: 1.10, accel: 0.07, spring: 1.05, stamina: 0.9990 },
   { name: 'Arabian', color: '#7b2fa8', darkColor: '#4a1a66', jockeyColor: '#9b59b6',
     desc: 'Nimble with a quick whip',
     stars: { spd: 4, jmp: 4, stm: 2 },
-    topSpeed: 3.5, accel: 0.40, spring: 1.20, stamina: 0.9910 },
+    topSpeed: 1.70, accel: 0.095, spring: 1.20, stamina: 0.9978 },
 ];
 
 // ── Track definitions ─────────────────────────────────────────
@@ -332,16 +333,16 @@ export class App implements OnInit, OnDestroy {
       const dist = hx - r.cameraX;
 
       if (state === 'none') {
-        if (dist <= HURDLE_HALF && dist >= -4) {
+        // Use full zone width — the old ">= -4" let fast horses slip through
+        if (dist <= HURDLE_HALF && dist > -HURDLE_HALF) {
           if (r.jumpH >= HURDLE_HEIGHT) {
-            r.hurdleState[i] = 'cleared';   // jumped over cleanly
+            r.hurdleState[i] = 'cleared';   // cleared cleanly
           } else {
-            // Horse hits hurdle — pin it, count the fault
-            r.cameraX = hx - HURDLE_HALF;
+            r.cameraX = hx - HURDLE_HALF;   // pin horse at the hurdle face
             r.hurdleState[i] = 'blocking';
             r.hurdlesHit++;
           }
-        } else if (dist < -HURDLE_HALF) {
+        } else if (dist <= -HURDLE_HALF) {
           r.hurdleState[i] = 'cleared';
         }
       } else if (state === 'blocking') {
